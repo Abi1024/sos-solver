@@ -92,7 +92,10 @@ def sos_to_sdp(syms, poly, z):
     prob = cvx.Problem(obj, constraints)
     prob.solve()
     Q0 = np.reshape(np.array(q.value),(deg,deg))
-    s0 = np.max(np.linalg.eigvals(Q0)) + 1
+    largest_eval = np.max(np.linalg.eigvals(Q0))
+    if (largest_eval <= 1e-10):
+     return (prob.status, -np.matrix(Q0))
+    s0 = largest_eval + 10
 
     #initialize starting points
     Q = cvx.Variable(deg,deg)
@@ -105,12 +108,14 @@ def sos_to_sdp(syms, poly, z):
     t = 0.1
     mu = 1.5
     iteration = 1
+    print("Running barrier method:")
     while (s.value > 0) and (m/t > eps):
         obj = cvx.Minimize(s-(1/t)*atom.log_det(s*np.eye(deg)-Q))
         constraints = [-A * q == b, Q == Q.T, q == cvx.vec(Q)]
         prob = cvx.Problem(obj,constraints)
         prob.solve()
-        print(Q.value)
+        #print(Q.value)
+        #print(obj.value)
         print("Iteration: {} Value of s: {}".format(iteration,s.value))
         t *= mu
         iteration += 1
@@ -182,11 +187,11 @@ def main():
     #poly = 1 # edge case SOS
     #poly = x*y # not SOS
     #poly = x**4 + y**4 # simple SOS
-    poly = x**2 + 2*x*y + y**2 # SOS (why error?)
+    #poly = x**2 + 2*x*y + y**2 # SOS (why error?)
     #poly = x**4 + x**2 + 2*x*y + y**2 # SOS (why error?)
     #poly = 4*x**4*y**6 + x**2 - x*y**2 + y**2 # SOS (takes too long)
     #poly = x**4*y**2 + x**2*y**4 - 3*x**2*y**2 + 1 # not SOS but PSD (takes too long)
-    #poly = 2 * x ** 4 + 5 * y ** 4 - x ** 2 * y ** 2 + 2 * x ** 3 * y  # is SOS
+    poly = 2 * x ** 4 + 5 * y ** 4 - x ** 2 * y ** 2 + 2 * x ** 3 * y  # is SOS
     print_sos_test(poly)
 
 
